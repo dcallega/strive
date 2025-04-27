@@ -38,6 +38,14 @@ class CachedActivity(SQLModel, table=True):
     total_elevation_gain: float
     cached_at: datetime = Field(default_factory=datetime.utcnow)
 
+class Goal(SQLModel, table=True):
+    id: int = Field(primary_key=True)
+    week: int
+    type: str
+    goal_type: str  # 'distance', 'time', or 'sessions'
+    target: float
+    unit: str  # 'km', 'mi', 'hours', 'minutes', or 'sessions'
+
 # Create SQLite database and tables
 engine = create_engine("sqlite:///./strava.db")
 SQLModel.metadata.create_all(engine)
@@ -221,3 +229,60 @@ async def get_activities(unit: Literal["km", "mi"] = Query("km", description="Di
             a["distance"] = a["distance"] * 0.621371
     
     return activities
+
+@app.get("/api/goals")
+async def get_goals(unit: Literal["km", "mi"] = Query("km", description="Distance unit (km or mi)")):
+    """Get all goals."""
+    with Session(engine) as session:
+        goals = session.exec(select(Goal)).all()
+        
+        # Convert distances if needed
+        for goal in goals:
+            if goal.type == 'distance':
+                if goal.unit == 'km' and unit == 'mi':
+                    # Convert km to miles
+                    goal.target = round(goal.target * 0.621371, 2)
+                    goal.unit = 'mi'
+                elif goal.unit == 'mi' and unit == 'km':
+                    # Convert miles to km
+                    goal.target = round(goal.target * 1.60934, 2)
+                    goal.unit = 'km'
+        
+        return [goal.dict() for goal in goals]
+
+@app.post("/api/goals")
+async def create_goal(goal: Goal):
+    """Create a new goal."""
+    with Session(engine) as session:
+        session.add(goal)
+        session.commit()
+        session.refresh(goal)
+        return goal
+
+@app.put("/api/goals/{goal_id}")
+async def update_goal(goal_id: int, goal: Goal):
+    """Update an existing goal."""
+    with Session(engine) as session:
+        db_goal = session.get(Goal, goal_id)
+        if not db_goal:
+            raise HTTPException(status_code=404, detail="Goal not found")
+        
+        for key, value in goal.dict(exclude_unset=True).items():
+            setattr(db_goal, key, value)
+        
+        session.add(db_goal)
+        session.commit()
+        session.refresh(db_goal)
+        return db_goal
+
+@app.delete("/api/goals/{goal_id}")
+async def delete_goal(goal_id: int):
+    """Delete a goal."""
+    with Session(engine) as session:
+        goal = session.get(Goal, goal_id)
+        if not goal:
+            raise HTTPException(status_code=404, detail="Goal not found")
+        
+        session.delete(goal)
+        session.commit()
+        return {"status": "deleted"}

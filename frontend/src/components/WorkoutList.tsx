@@ -58,7 +58,8 @@ const getActivityIcon = (type: string) => {
   }
 };
 
-const getWeekNumber = (date: Date) => {
+// Helper function to get the ISO week number
+const getWeekNumber = (date: Date): number => {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
   const dayNum = d.getUTCDay() || 7;
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
@@ -78,8 +79,8 @@ export function WorkoutList({ workouts, loading, onRefresh, unit }: WorkoutListP
   );
 
   return (
-      <Paper elevation={2} sx={{ p: 3, width: '100%'}}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+    <Paper elevation={2} sx={{ p: 3, width: '100%'}}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h6">
           Recent Workouts
         </Typography>
@@ -143,7 +144,7 @@ export function WorkoutList({ workouts, loading, onRefresh, unit }: WorkoutListP
               secondary="Please wait while we fetch your latest activities"
             />
           </ListItem>
-        ) : filteredWorkouts.map((workout) => {
+        ) : filteredWorkouts.map(workout => {
           const date = new Date(workout.start_date);
           const weekNumber = getWeekNumber(date);
           return (

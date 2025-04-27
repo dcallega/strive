@@ -3,8 +3,23 @@ import { Container, Typography, Box, Button, AppBar, Toolbar, FormControlLabel, 
 import { WorkoutList } from './components/WorkoutList';
 import { VisualizationPanel } from './components/VisualizationPanel';
 import { DistanceByTypeChart } from './components/DistanceByTypeChart';
+import { ActivitiesByTimeChart } from './components/ActivitiesByTimeChart';
+import { WeeklyGoals } from './components/WeeklyGoals';
+import List from '@mui/icons-material/List';
+import BarChart from '@mui/icons-material/BarChart';
+import Timeline from '@mui/icons-material/Timeline';
+import Flag from '@mui/icons-material/Flag';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
+// Helper function to get the ISO week number
+const getWeekNumber = (date: Date): number => {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+};
 
 interface Workout {
   id: number;
@@ -15,6 +30,14 @@ interface Workout {
   type: string;
   start_date: string;
 }
+
+const visualizations = [
+  { id: 'list', name: 'Workout List', icon: <List /> },
+  { id: 'bar', name: 'Weekly Performance', icon: <BarChart /> },
+  { id: 'time', name: 'Weekly Time Spent', icon: <Timeline /> },
+  { id: 'goals', name: 'Weekly Goals', icon: <Flag /> },
+  // { id: 'pie', name: 'Activity Distribution', icon: <PieChartIcon /> },
+];
 
 function App() {
   const [isConnected, setIsConnected] = useState(false);
@@ -199,6 +222,19 @@ function App() {
                   workouts={workouts} 
                   loading={refreshing} 
                   unit={useMiles ? 'mi' : 'km'} 
+                />
+              )}
+              {selectedVisualization === 'time' && (
+                <ActivitiesByTimeChart 
+                  workouts={workouts} 
+                  loading={refreshing} 
+                />
+              )}
+              {selectedVisualization === 'goals' && (
+                <WeeklyGoals 
+                  loading={refreshing} 
+                  unit={useMiles ? 'mi' : 'km'} 
+                  workouts={workouts}
                 />
               )}
             </>

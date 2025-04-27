@@ -10,9 +10,10 @@ import {
   Typography
 } from '@mui/material';
 import ListIcon from '@mui/icons-material/List';
-import BarChartIcon from '@mui/icons-material/BarChart';
-import TimelineIcon from '@mui/icons-material/Timeline';
-import PieChartIcon from '@mui/icons-material/PieChart';
+import BarChart from '@mui/icons-material/BarChart';
+import Timeline from '@mui/icons-material/Timeline';
+import PieChart from '@mui/icons-material/PieChart';
+import Flag from '@mui/icons-material/Flag';
 
 interface VisualizationPanelProps {
   selectedVisualization: string;
@@ -21,9 +22,10 @@ interface VisualizationPanelProps {
 
 const visualizations = [
   { id: 'list', name: 'Workout List', icon: <ListIcon /> },
-  { id: 'bar', name: 'Weekly Performance', icon: <BarChartIcon /> },
-  // { id: 'line', name: 'Progress Over Time', icon: <TimelineIcon /> },
-  // { id: 'pie', name: 'Activity Distribution', icon: <PieChartIcon /> },
+  { id: 'bar', name: 'Weekly Performance', icon: <BarChart /> },
+  { id: 'time', name: 'Weekly Time Spent', icon: <Timeline /> },
+  { id: 'goals', name: 'Weekly Goals', icon: <Flag /> },
+  // { id: 'pie', name: 'Activity Distribution', icon: <PieChart /> },
 ];
 
 export function VisualizationPanel({ selectedVisualization, onVisualizationChange }: VisualizationPanelProps) {
