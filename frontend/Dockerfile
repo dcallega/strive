@@ -1,19 +1,21 @@
-FROM node:16-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
-# Install dependencies first
+# Copy package files
 COPY package*.json ./
+
+# Install dependencies
 RUN npm install --legacy-peer-deps
 
 # Copy the rest of the application
 COPY . .
 
-# Expose the port Vite runs on
+# Expose the port the app runs on
 EXPOSE 5173
 
 # Set environment variables
 ENV HOST=0.0.0.0
 
-# Start the app
-CMD ["npm", "run", "dev", "--", "--host"]
+# Start the development server
+CMD ["npm", "run", "dev"]
