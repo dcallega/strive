@@ -173,6 +173,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onConnect }) => {
       sx={{
         minHeight: '100vh',
         background: `linear-gradient(135deg, ${theme.palette.background.default} 0%, ${theme.palette.background.paper} 100%)`,
+        backgroundColor: '#1a1a2e',
       }}
     >
       {/* Hero Section */}
@@ -209,6 +210,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onConnect }) => {
                     Watch Demo
                   </Button>
                 </Box>
+                <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+                  <img 
+                    src="/src/assets/api_logo_pwrdBy_strava_stack_orange.png" 
+                    alt="Powered by Strava" 
+                    style={{ height: '40px' }}
+                  />
+                </Box>
                 <Box sx={{ mt: 4, display: 'flex', gap: 4 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <PeopleIcon color="action" />
@@ -234,13 +242,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onConnect }) => {
             <Grid item xs={12} md={6}>
               <Box
                 component="img"
-                src="/src/assets/hero-illustration.svg"
-                alt="Fitness tracking illustration"
+                src="/src/assets/tri_voxels.png"
+                alt="Triathlon voxel art illustration"
                 sx={{
                   width: '100%',
                   height: 'auto',
                   maxWidth: 500,
                   display: { xs: 'none', md: 'block' },
+                  animation: 'slideIn 0.8s ease-out',
+                  '@keyframes slideIn': {
+                    '0%': {
+                      opacity: 0,
+                      transform: 'translateX(30px)',
+                    },
+                    '100%': {
+                      opacity: 1,
+                      transform: 'translateX(0)',
+                    },
+                  },
                 }}
               />
             </Grid>
@@ -325,35 +344,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onConnect }) => {
                 ]}
               />
             </Grid>
-            {/* <Grid item xs={12} md={4}>
-              <PricingCard
-                title="Pro"
-                price="$19.99"
-                description="For dedicated athletes seeking performance gains."
-                features={[
-                  "Advanced analytics and metrics",
-                  "Training load management",
-                  "Personalized training zones",
-                  "Course analysis and race strategy",
-                  "Connect unlimited devices"
-                ]}
-                isPopular
-              />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <PricingCard
-                title="Elite"
-                price="$39.99"
-                description="For competitive athletes and coaches."
-                features={[
-                  "All Pro features",
-                  "AI coaching recommendations",
-                  "Advanced biomechanical analysis",
-                  "Team management features",
-                  "Priority support"
-                ]}
-              />
-            </Grid> */}
           </Grid>
         </Container>
       </Box>

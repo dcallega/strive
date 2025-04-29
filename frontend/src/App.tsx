@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Container, Typography, Box, Button, AppBar, Toolbar, FormControlLabel, Switch, CircularProgress } from '@mui/material';
+import { Container, Typography, Box, Button, AppBar, Toolbar, FormControlLabel, Switch, CircularProgress, IconButton } from '@mui/material';
 import { WorkoutList } from './components/WorkoutList';
 import { VisualizationPanel } from './components/VisualizationPanel';
 import { DistanceByTypeChart } from './components/DistanceByTypeChart';
@@ -11,6 +11,9 @@ import List from '@mui/icons-material/List';
 import BarChart from '@mui/icons-material/BarChart';
 import Timeline from '@mui/icons-material/Timeline';
 import Flag from '@mui/icons-material/Flag';
+import Brightness4Icon from '@mui/icons-material/Brightness4';
+import Brightness7Icon from '@mui/icons-material/Brightness7';
+import { useTheme } from './context/ThemeContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
@@ -42,6 +45,7 @@ const visualizations = [
 ];
 
 function App() {
+  const { isDarkMode, toggleTheme } = useTheme();
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedVisualization, setSelectedVisualization] = useState('list');
@@ -156,6 +160,9 @@ function App() {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             Strive - Workouts Visualizer
           </Typography>
+          <IconButton onClick={toggleTheme} color="inherit">
+            {isDarkMode ? <Brightness7Icon /> : <Brightness4Icon />}
+          </IconButton>
           {isConnected && (
             <>
               <FormControlLabel

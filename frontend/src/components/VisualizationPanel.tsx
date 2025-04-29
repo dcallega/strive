@@ -14,6 +14,7 @@ import BarChart from '@mui/icons-material/BarChart';
 import Timeline from '@mui/icons-material/Timeline';
 import PieChart from '@mui/icons-material/PieChart';
 import Flag from '@mui/icons-material/Flag';
+import { useTheme } from '../context/ThemeContext';
 
 interface VisualizationPanelProps {
   selectedVisualization: string;
@@ -29,6 +30,8 @@ const visualizations = [
 ];
 
 export function VisualizationPanel({ selectedVisualization, onVisualizationChange }: VisualizationPanelProps) {
+  const { isDarkMode } = useTheme();
+  
   return (
     <Drawer
       variant="permanent"
@@ -62,6 +65,13 @@ export function VisualizationPanel({ selectedVisualization, onVisualizationChang
             </ListItem>
           ))}
         </List>
+        <Box sx={{ mt: 8, mb: 4, display: 'flex', justifyContent: 'center' }}>
+          <img 
+            src={isDarkMode ? "/src/assets/api_logo_pwrdBy_strava_stack_white.png" : "/src/assets/api_logo_pwrdBy_strava_stack_orange.png"} 
+            alt="Powered by Strava" 
+            style={{ height: '30px' }}
+          />
+        </Box>
       </Box>
     </Drawer>
   );
