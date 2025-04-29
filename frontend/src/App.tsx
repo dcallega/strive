@@ -6,6 +6,7 @@ import { DistanceByTypeChart } from './components/DistanceByTypeChart';
 import { ActivitiesByTimeChart } from './components/ActivitiesByTimeChart';
 import { WeeklyGoals } from './components/WeeklyGoals';
 import { StravaConnectButton } from './components/StravaConnectButton';
+import { LandingPage } from './components/LandingPage';
 import List from '@mui/icons-material/List';
 import BarChart from '@mui/icons-material/BarChart';
 import Timeline from '@mui/icons-material/Timeline';
@@ -153,7 +154,7 @@ function App() {
       <AppBar position="fixed">
         <Toolbar>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Strava Workouts
+            Strive - Workouts Visualizer
           </Typography>
           {isConnected && (
             <>
@@ -194,15 +195,7 @@ function App() {
           }}
         >
           {!isConnected ? (
-            <>
-              <Typography variant="h4" component="h1" gutterBottom>
-                Welcome to Your App
-              </Typography>
-              <Typography variant="body1" sx={{ mb: 2 }}>
-                Connect your Strava account to get started
-              </Typography>
-              <StravaConnectButton onClick={handleStravaConnect} />
-            </>
+            <LandingPage onConnect={handleStravaConnect} />
           ) : (
             <>
               {selectedVisualization === 'list' && (
