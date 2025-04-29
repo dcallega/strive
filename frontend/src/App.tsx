@@ -5,6 +5,7 @@ import { VisualizationPanel } from './components/VisualizationPanel';
 import { DistanceByTypeChart } from './components/DistanceByTypeChart';
 import { ActivitiesByTimeChart } from './components/ActivitiesByTimeChart';
 import { WeeklyGoals } from './components/WeeklyGoals';
+import { StravaConnectButton } from './components/StravaConnectButton';
 import List from '@mui/icons-material/List';
 import BarChart from '@mui/icons-material/BarChart';
 import Timeline from '@mui/icons-material/Timeline';
@@ -35,7 +36,7 @@ const visualizations = [
   { id: 'list', name: 'Workout List', icon: <List /> },
   { id: 'bar', name: 'Weekly Performance', icon: <BarChart /> },
   { id: 'time', name: 'Weekly Time Spent', icon: <Timeline /> },
-  { id: 'goals', name: 'Weekly Goals', icon: <Flag /> },
+  // { id: 'goals', name: 'Weekly Goals', icon: <Flag /> },
   // { id: 'pie', name: 'Activity Distribution', icon: <PieChartIcon /> },
 ];
 
@@ -198,14 +199,9 @@ function App() {
                 Welcome to Your App
               </Typography>
               <Typography variant="body1" sx={{ mb: 2 }}>
-                Connect your Strava account to view your workouts.
+                Connect your Strava account to get started
               </Typography>
-              <Button
-                variant="contained"
-                onClick={handleStravaConnect}
-              >
-                Connect with Strava
-              </Button>
+              <StravaConnectButton onClick={handleStravaConnect} />
             </>
           ) : (
             <>

@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
-  LineChart,
-  Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -36,11 +36,26 @@ interface Workout {
   start_date: string;
 }
 
+interface WeeklyData {
+  week: string;
+  weekNumber: number;
+  year: number;
+  activities: {
+    [key: string]: {
+      distance: number;
+      moving_time: number;
+      count: number;
+    };
+  };
+}
+
 interface DistanceByTypeChartProps {
   workouts: Workout[];
   loading: boolean;
   unit: 'km' | 'mi';
 }
+
+type SortDirection = 'asc' | 'desc' | null;
 
 const COLORS = {
   Run: '#8884d8',
@@ -76,84 +91,71 @@ const ACTIVITY_GROUPS = {
   }
 };
 
-type SortDirection = 'asc' | 'desc' | null;
-
 export function DistanceByTypeChart({ workouts, loading, unit }: DistanceByTypeChartProps) {
   const [combineRides, setCombineRides] = useState(false);
   const [combineRuns, setCombineRuns] = useState(false);
   const [hiddenTypes, setHiddenTypes] = useState<Set<string>>(new Set());
-  const [sortBy, setSortBy] = useState<string>('week');
+  const [sortBy, setSortBy] = useState<string>('weekNumber');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [weeklyData, setWeeklyData] = useState<WeeklyData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchWeeklyData = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/activities/weekly?unit=${unit}`);
+        if (response.ok) {
+          const data = await response.json();
+          setWeeklyData(data);
+        }
+      } catch (error) {
+        console.error('Error fetching weekly data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchWeeklyData();
+  }, [unit]);
 
   const chartData = useMemo(() => {
-    // Group workouts by week and type
-    const weeklyData = workouts.reduce((acc, workout) => {
-      const date = new Date(workout.start_date);
-      // Get the start of the week (Monday)
-      const weekStart = new Date(date);
-      const day = date.getDay();
-      // Adjust to get Monday as start of week
-      const diff = date.getDate() - day + (day === 0 ? -6 : 1);
-      weekStart.setDate(diff);
-      // Set time to midnight to ensure consistent week keys
-      weekStart.setHours(0, 0, 0, 0);
-      const weekKey = weekStart.toISOString().split('T')[0];
-      
-      if (!acc[weekKey]) {
-        acc[weekKey] = {};
-      }
-      
-      let type = workout.type;
+    if (isLoading) return [];
+
+    return weeklyData.map(week => {
+      const activities = week.activities;
+      const combinedData: { [key: string]: number } = {};
+
       // Combine similar types if checkboxes are checked
-      if (combineRides && (type === 'Ride' || type === 'VirtualRide')) {
-        type = 'Ride';
-      }
-      if (combineRuns && (type === 'Run' || type === 'Walk')) {
-        type = 'Run';
-      }
-      
-      acc[weekKey][type] = (acc[weekKey][type] || 0) + workout.distance;
-      return acc;
-    }, {} as Record<string, Record<string, number>>);
+      Object.entries(activities).forEach(([type, data]) => {
+        let finalType = type;
+        if (combineRides && (type === 'Ride' || type === 'VirtualRide')) {
+          finalType = 'Ride';
+        }
+        if (combineRuns && (type === 'Run' || type === 'Walk')) {
+          finalType = 'Run';
+        }
 
-    // Get all unique activity types
-    const types = Array.from(new Set(workouts.map(w => {
-      let type = w.type;
-      if (combineRides && (type === 'Ride' || type === 'VirtualRide')) {
-        type = 'Ride';
-      }
-      if (combineRuns && (type === 'Run' || type === 'Walk')) {
-        type = 'Run';
-      }
-      return type;
-    })));
+        if (!combinedData[finalType]) {
+          combinedData[finalType] = 0;
+        }
+        combinedData[finalType] += data.distance;
+      });
 
-    // Convert to array format for recharts and sort chronologically
-    return Object.entries(weeklyData)
-      .map(([week, typeDistances]) => {
-        const date = new Date(week);
-        // Calculate week number (ISO week number)
-        const getWeekNumber = (date: Date) => {
-          const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-          const dayNum = d.getUTCDay() || 7;
-          d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-          const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-          return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-        };
-        return {
-          week,
-          weekNumber: getWeekNumber(date),
-          ...types.reduce((acc, type) => ({
-            ...acc,
-            [type]: Number((typeDistances[type] || 0).toFixed(2))
-          }), {})
-        };
-      })
-      .sort((a, b) => a.week.localeCompare(b.week));
-  }, [workouts, combineRides, combineRuns]);
+      return {
+        week: week.week,
+        weekNumber: week.weekNumber,
+        ...combinedData
+      };
+    });
+  }, [weeklyData, combineRides, combineRuns, isLoading]);
 
   const tableData = useMemo(() => {
     return [...chartData].sort((a, b) => {
+      if (sortBy === 'weekNumber') {
+        return sortDirection === 'asc' 
+          ? a.weekNumber - b.weekNumber
+          : b.weekNumber - a.weekNumber;
+      }
       if (sortBy === 'week') {
         return sortDirection === 'asc' 
           ? a.week.localeCompare(b.week)
@@ -167,7 +169,7 @@ export function DistanceByTypeChart({ workouts, loading, unit }: DistanceByTypeC
     });
   }, [chartData, sortBy, sortDirection]);
 
-  if (loading) {
+  if (loading || isLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
         <CircularProgress />
@@ -176,16 +178,17 @@ export function DistanceByTypeChart({ workouts, loading, unit }: DistanceByTypeC
   }
 
   // Get all unique activity types for the lines
-  const types = Array.from(new Set(workouts.map(w => {
-    let type = w.type;
-    if (combineRides && (type === 'Ride' || type === 'VirtualRide')) {
-      type = 'Ride';
-    }
-    if (combineRuns && (type === 'Run' || type === 'Walk')) {
-      type = 'Run';
-    }
-    return type;
-  })));
+  const types = Array.from(new Set(weeklyData.flatMap(week => 
+    Object.keys(week.activities).map(type => {
+      if (combineRides && (type === 'Ride' || type === 'VirtualRide')) {
+        return 'Ride';
+      }
+      if (combineRuns && (type === 'Run' || type === 'Walk')) {
+        return 'Run';
+      }
+      return type;
+    })
+  )));
 
   const handleLegendClick = (e: any) => {
     const type = e.dataKey;
@@ -202,11 +205,21 @@ export function DistanceByTypeChart({ workouts, loading, unit }: DistanceByTypeC
 
   const handleSort = (column: string) => {
     if (sortBy === column) {
-      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'desc');
     } else {
       setSortBy(column);
       setSortDirection('asc');
     }
+  };
+
+  const getWeekRange = (weekKey: string) => {
+    const [year, week] = weekKey.split('-W');
+    const date = new Date(parseInt(year), 0, 1 + (parseInt(week) - 1) * 7);
+    const startDate = new Date(date);
+    startDate.setDate(date.getDate() - date.getDay() + 1); // Move to Monday
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 6); // Move to Sunday
+    return `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`;
   };
 
   return (
@@ -236,7 +249,7 @@ export function DistanceByTypeChart({ workouts, loading, unit }: DistanceByTypeC
       </FormGroup>
       <Box sx={{ height: 400 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart
+          <BarChart
             data={chartData}
             margin={{
               top: 20,
@@ -266,7 +279,7 @@ export function DistanceByTypeChart({ workouts, loading, unit }: DistanceByTypeC
                   position: group === 'short' ? 'insideRight' : 'insideLeft',
                   style: { fill: config.color }
                 }}
-                domain={config.domain}
+                domain={[0, 'auto']}
                 stroke={config.color}
               />
             ))}
@@ -288,19 +301,17 @@ export function DistanceByTypeChart({ workouts, loading, unit }: DistanceByTypeC
               )?.[0] || 'medium';
               
               return (
-                <Line
+                <Bar
                   key={type}
-                  type="monotone"
                   dataKey={type}
                   yAxisId={ACTIVITY_GROUPS[group as keyof typeof ACTIVITY_GROUPS].yAxisId}
-                  stroke={COLORS[type as keyof typeof COLORS] || COLORS.default}
+                  fill={COLORS[type as keyof typeof COLORS] || COLORS.default}
                   name={type}
-                  dot={false}
                   hide={hiddenTypes.has(type)}
                 />
               );
             })}
-          </LineChart>
+          </BarChart>
         </ResponsiveContainer>
       </Box>
       <TableContainer component={Paper} sx={{ mt: 2 }}>
@@ -322,7 +333,7 @@ export function DistanceByTypeChart({ workouts, loading, unit }: DistanceByTypeC
                   direction={sortBy === 'week' ? sortDirection || undefined : undefined}
                   onClick={() => handleSort('week')}
                 >
-                  Date
+                  Week Range
                 </TableSortLabel>
               </TableCell>
               {types.map(type => (
@@ -351,7 +362,7 @@ export function DistanceByTypeChart({ workouts, loading, unit }: DistanceByTypeC
                   {row.weekNumber}
                 </TableCell>
                 <TableCell>
-                  {new Date(row.week).toLocaleDateString()}
+                  {getWeekRange(row.week)}
                 </TableCell>
                 {types.map(type => (
                   <TableCell 

@@ -24,7 +24,7 @@ const visualizations = [
   { id: 'list', name: 'Workout List', icon: <ListIcon /> },
   { id: 'bar', name: 'Weekly Performance', icon: <BarChart /> },
   { id: 'time', name: 'Weekly Time Spent', icon: <Timeline /> },
-  { id: 'goals', name: 'Weekly Goals', icon: <Flag /> },
+  // { id: 'goals', name: 'Weekly Goals', icon: <Flag /> },
   // { id: 'pie', name: 'Activity Distribution', icon: <PieChart /> },
 ];
 

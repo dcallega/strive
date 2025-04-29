@@ -6,6 +6,7 @@ from sqlmodel import Field, SQLModel, create_engine, Session, select, delete
 import os
 from datetime import datetime, timedelta
 from typing import Literal
+from app.utils.encryption import encryption
 
 app = FastAPI()
 STRAVA_CLIENT_ID = os.getenv("STRAVA_CLIENT_ID", "123647")
@@ -19,9 +20,32 @@ CACHE_DURATION_HOURS = 1  # Activities are cached for 1 hour by default
 # Define models
 class StravaAccount(SQLModel, table=True):
     athlete_id: int = Field(primary_key=True)
-    access_token: str
-    refresh_token: str
+    access_token: str = Field(default="")
+    refresh_token: str = Field(default="")
     expires_at: int
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        if 'access_token' in data:
+            self.set_access_token(data['access_token'])
+        if 'refresh_token' in data:
+            self.set_refresh_token(data['refresh_token'])
+
+    def get_access_token(self) -> str:
+        """Get the decrypted access token."""
+        return encryption.decrypt(self.access_token)
+
+    def set_access_token(self, value: str):
+        """Set the encrypted access token."""
+        self.access_token = encryption.encrypt(value)
+
+    def get_refresh_token(self) -> str:
+        """Get the decrypted refresh token."""
+        return encryption.decrypt(self.refresh_token)
+
+    def set_refresh_token(self, value: str):
+        """Set the encrypted refresh token."""
+        self.refresh_token = encryption.encrypt(value)
 
 class CachedActivity(SQLModel, table=True):
     id: int = Field(primary_key=True)
@@ -122,9 +146,19 @@ async def logout():
         session.commit()
     return {"status": "logged_out"}
 
+@app.post("/auth/clear-data")
+async def clear_data():
+    """Clear all existing data to start fresh with encryption."""
+    with Session(engine) as session:
+        # Delete all Strava accounts and cached activities
+        session.exec(delete(CachedActivity))
+        session.exec(delete(StravaAccount))
+        session.commit()
+    return {"status": "data_cleared"}
+
 async def fetch_and_cache_activities(account: StravaAccount):
     """Fetch activities from Strava and cache them."""
-    access_token = account.access_token
+    access_token = account.get_access_token()
     headers = {"Authorization": f"Bearer {access_token}"}
     
     async with httpx.AsyncClient() as client:
@@ -136,9 +170,9 @@ async def fetch_and_cache_activities(account: StravaAccount):
         activities = resp.json()
         
         # Normalize: map walks+jogs to "Run" category
-        for a in activities:
-            if a["type"] in ("Walk",) and a["average_speed"] > 2.5:
-                a["type"] = "Run"
+        for activity in activities:
+            if isinstance(activity, dict) and activity.get("type") in ("Walk",) and activity.get("average_speed", 0) > 2.5:
+                activity["type"] = "Run"
         
         # Cache the activities
         with Session(engine) as session:
@@ -149,20 +183,21 @@ async def fetch_and_cache_activities(account: StravaAccount):
             
             # Cache new activities
             for activity in activities:
-                cached_activity = CachedActivity(
-                    athlete_id=account.athlete_id,
-                    strava_id=activity["id"],
-                    name=activity["name"],
-                    distance=activity["distance"],
-                    moving_time=activity["moving_time"],
-                    elapsed_time=activity["elapsed_time"],
-                    type=activity["type"],
-                    start_date=datetime.fromisoformat(activity["start_date"].replace("Z", "+00:00")),
-                    average_speed=activity["average_speed"],
-                    max_speed=activity["max_speed"],
-                    total_elevation_gain=activity["total_elevation_gain"]
-                )
-                session.add(cached_activity)
+                if isinstance(activity, dict):
+                    cached_activity = CachedActivity(
+                        athlete_id=account.athlete_id,
+                        strava_id=activity["id"],
+                        name=activity["name"],
+                        distance=activity["distance"],
+                        moving_time=activity["moving_time"],
+                        elapsed_time=activity["elapsed_time"],
+                        type=activity["type"],
+                        start_date=datetime.fromisoformat(activity["start_date"].replace("Z", "+00:00")),
+                        average_speed=activity["average_speed"],
+                        max_speed=activity["max_speed"],
+                        total_elevation_gain=activity["total_elevation_gain"]
+                    )
+                    session.add(cached_activity)
             session.commit()
             
         return activities
@@ -286,3 +321,56 @@ async def delete_goal(goal_id: int):
         session.delete(goal)
         session.commit()
         return {"status": "deleted"}
+
+@app.get("/api/activities/weekly")
+async def get_weekly_activities(unit: Literal["km", "mi"] = Query("km", description="Distance unit (km or mi)")):
+    """Get activities aggregated by week."""
+    with Session(engine) as session:
+        # Get all activities
+        activities = session.exec(select(CachedActivity)).all()
+        
+        # Group activities by week and type
+        weekly_data = {}
+        for activity in activities:
+            # Calculate ISO week number
+            date = activity.start_date
+            d = date.replace(hour=0, minute=0, second=0, microsecond=0)
+            day_num = d.weekday() + 1  # Monday is 1, Sunday is 7
+            d = d - timedelta(days=day_num-1)  # Move to Monday
+            year_start = datetime(d.year, 1, 1)
+            week_number = ((d - year_start).days // 7) + 1
+            
+            week_key = f"{d.year}-W{week_number}"
+            
+            if week_key not in weekly_data:
+                weekly_data[week_key] = {}
+            
+            activity_type = activity.type
+            if activity_type not in weekly_data[week_key]:
+                weekly_data[week_key][activity_type] = {
+                    'distance': 0,
+                    'moving_time': 0,
+                    'count': 0
+                }
+            
+            # Convert distance to requested unit if needed
+            distance = activity.distance / 1000  # Convert meters to kilometers
+            if unit == "mi":
+                distance = distance * 0.621371  # Convert kilometers to miles
+            
+            weekly_data[week_key][activity_type]['distance'] += distance
+            weekly_data[week_key][activity_type]['moving_time'] += activity.moving_time
+            weekly_data[week_key][activity_type]['count'] += 1
+        
+        # Convert to list format and sort by week
+        result = []
+        for week_key, type_data in weekly_data.items():
+            year, week = week_key.split('-W')
+            result.append({
+                'week': week_key,
+                'weekNumber': int(week),
+                'year': int(year),
+                'activities': type_data
+            })
+        
+        return sorted(result, key=lambda x: (x['year'], x['weekNumber']))
