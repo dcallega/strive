@@ -2,11 +2,8 @@ from cryptography.fernet import Fernet
 import os
 from base64 import b64encode, b64decode
 from dotenv import load_dotenv
-from pathlib import Path
 
-# Load environment variables from .env file
-env_path = Path(__file__).parents[2] / '.env'
-load_dotenv(env_path)
+load_dotenv()
 
 class Encryption:
     def __init__(self):

@@ -211,11 +211,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onConnect }) => {
                   </Button>
                 </Box>
                 <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
-                  <img 
-                    src="/src/assets/api_logo_pwrdBy_strava_stack_orange.png" 
-                    alt="Powered by Strava" 
-                    style={{ height: '40px' }}
-                  />
+                  <a href="http://strava.com/" target="_blank" rel="noopener noreferrer">
+                    <img 
+                      src="/src/assets/api_logo_pwrdBy_strava_stack_orange.png" 
+                      alt="Powered by Strava" 
+                      style={{ height: '40px' }}
+                    />
+                  </a>
                 </Box>
                 <Box sx={{ mt: 4, display: 'flex', gap: 4 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -317,7 +319,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onConnect }) => {
               <TestimonialCard
                 name="Davide C."
                 role="Triathlete"
-                quote="I am just trying to be consistent and improve my performance."
+                quote="I was just looking for a platform that kept it simple and helped me to stay on track."
               />
             </Grid>
           </Grid>
@@ -335,7 +337,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onConnect }) => {
               <PricingCard
                 title="Free"
                 price="$0"
-                description="Perfect for beginners and casual triathletes."
+                description="Perfect for triathletes who want to stay consistent."
                 features={[
                   "Basic analytics for all three disciplines",
                   // "Training calendar",

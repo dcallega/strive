@@ -66,11 +66,13 @@ export function VisualizationPanel({ selectedVisualization, onVisualizationChang
           ))}
         </List>
         <Box sx={{ mt: 8, mb: 4, display: 'flex', justifyContent: 'center' }}>
-          <img 
-            src={isDarkMode ? "/src/assets/api_logo_pwrdBy_strava_stack_white.png" : "/src/assets/api_logo_pwrdBy_strava_stack_orange.png"} 
-            alt="Powered by Strava" 
-            style={{ height: '30px' }}
-          />
+          <a href="http://strava.com/" target="_blank" rel="noopener noreferrer">
+            <img 
+              src={isDarkMode ? "/src/assets/api_logo_pwrdBy_strava_stack_white.png" : "/src/assets/api_logo_pwrdBy_strava_stack_orange.png"} 
+              alt="Powered by Strava" 
+              style={{ height: '30px' }}
+            />
+          </a>
         </Box>
       </Box>
     </Drawer>

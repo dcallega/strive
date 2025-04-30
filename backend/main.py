@@ -7,12 +7,19 @@ import os
 from datetime import datetime, timedelta
 from typing import Literal
 from app.utils.encryption import encryption
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 app = FastAPI()
-STRAVA_CLIENT_ID = os.getenv("STRAVA_CLIENT_ID", "123647")
-STRAVA_CLIENT_SECRET = os.getenv("STRAVA_CLIENT_SECRET", "70f283fe937036f6270978efcdc81c7314641a18")
-STRAVA_REDIRECT_URI = os.getenv("STRAVA_REDIRECT_URI", "http://localhost:8000/auth/strava/callback")
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+
+# Get configuration from environment variables
+STRAVA_CLIENT_ID = os.getenv("STRAVA_CLIENT_ID")
+STRAVA_CLIENT_SECRET = os.getenv("STRAVA_CLIENT_SECRET")
+STRAVA_REDIRECT_URI = os.getenv("STRAVA_REDIRECT_URI")
+FRONTEND_URL = os.getenv("FRONTEND_URL")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./strava.db")
 
 # Cache configuration
 CACHE_DURATION_HOURS = 1  # Activities are cached for 1 hour by default
@@ -71,7 +78,7 @@ class Goal(SQLModel, table=True):
     unit: str  # 'km', 'mi', 'hours', 'minutes', or 'sessions'
 
 # Create SQLite database and tables
-engine = create_engine("sqlite:///./strava.db")
+engine = create_engine(DATABASE_URL)
 SQLModel.metadata.create_all(engine)
 
 # Configure CORS
@@ -335,9 +342,12 @@ async def get_weekly_activities(unit: Literal["km", "mi"] = Query("km", descript
             # Calculate ISO week number
             date = activity.start_date
             d = date.replace(hour=0, minute=0, second=0, microsecond=0)
-            day_num = d.weekday() + 1  # Monday is 1, Sunday is 7
-            d = d - timedelta(days=day_num-1)  # Move to Monday
+            # Get the day of the week (0 = Monday, 6 = Sunday)
+            day_num = d.weekday()
+            # Move to the Thursday of the same week (ISO weeks start on Monday)
+            d = d - timedelta(days=day_num-3)
             year_start = datetime(d.year, 1, 1)
+            # Calculate week number
             week_number = ((d - year_start).days // 7) + 1
             
             week_key = f"{d.year}-W{week_number}"
