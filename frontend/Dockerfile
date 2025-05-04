@@ -15,12 +15,16 @@ FROM nginx:stable-alpine AS production
 # Remove default nginx website
 RUN rm -rf /usr/share/nginx/html/*
 
+# Create SSL directory
+RUN mkdir -p /etc/nginx/ssl
+
 # Copy built assets
 COPY --from=build /app/dist /usr/share/nginx/html
 
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Expose port 80 and run Nginx
-EXPOSE 80
+# Expose ports for HTTP and HTTPS
+EXPOSE 80 443
+
 CMD ["nginx", "-g", "daemon off;"]
